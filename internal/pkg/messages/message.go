@@ -11,4 +11,5 @@ type ClientMessage struct {
 	ClientId    string
 	MessageType MessageType
 	Payload     string
+	Destination string
 }

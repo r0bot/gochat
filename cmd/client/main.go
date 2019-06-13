@@ -8,14 +8,14 @@ import (
 	"github.com/r0bot/gochat/internal/pkg/messages"
 	"net"
 	"os"
+	"strings"
 )
 
 type client struct {
 	connection net.Conn
 }
 
-func (client *client) sendMessage(usrInput input.UserInput) {
-	clientMessage := messages.ClientMessage{"", messages.Broadcast, usrInput.Payload}
+func (client *client) sendMessage(clientMessage messages.ClientMessage) {
 	if client.connection != nil {
 		encoder := json.NewEncoder(client.connection)
 		err := encoder.Encode(&clientMessage)
@@ -27,7 +27,7 @@ func (client *client) sendMessage(usrInput input.UserInput) {
 		fmt.Println("Reconnecting..")
 		client.connectToServer()
 		// Call the function again
-		client.sendMessage(usrInput)
+		client.sendMessage(clientMessage)
 	}
 }
 
@@ -59,11 +59,26 @@ func (client *client) listen() {
 }
 
 func executeCommand(usrInput input.UserInput, client *client) {
-	fmt.Println(usrInput.Payload)
-	if usrInput.Payload == "exit" {
+	commandComponents := strings.Fields(usrInput.Payload)
+	//Check the first field of the string as this should be the command name
+	//If exit quit the process
+	if commandComponents[0] == "exit" {
 		fmt.Println("Exiting.")
 		os.Exit(0)
 	}
+	// If pm create the message and send it
+	if commandComponents[0] == "pm" {
+		// the destination of the message (ClientId) should be the second part of the command
+		// and the payload teh third
+		clientMessage := messages.ClientMessage{
+			MessageType: messages.PM,
+			Payload:     commandComponents[2],
+			Destination: commandComponents[1],
+		}
+		client.sendMessage(clientMessage)
+		return
+	}
+
 	fmt.Println("Unrecognised command.")
 }
 
@@ -83,7 +98,8 @@ func main() {
 		case input.Command:
 			executeCommand(usrInput, &client)
 		case input.Message:
-			client.sendMessage(usrInput)
+			clientMessage := messages.ClientMessage{MessageType: messages.Broadcast, Payload: usrInput.Payload}
+			client.sendMessage(clientMessage)
 		default:
 			fmt.Println("Invalid input.")
 		}
