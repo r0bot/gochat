@@ -1,7 +1,14 @@
 package messages
 
+type MessageType int
+
+const (
+	Broadcast MessageType = iota
+	PM
+)
+
 type ClientMessage struct {
 	ClientId    string
-	MessageType string
+	MessageType MessageType
 	Payload     string
 }

@@ -10,7 +10,6 @@ import (
 type Client struct {
 	Id     string
 	Conn   net.Conn
-	Input  chan []byte
 	Output chan messages.ClientMessage
 }
 

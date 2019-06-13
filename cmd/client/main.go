@@ -4,23 +4,18 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/r0bot/gochat/internal/pkg/input"
 	"github.com/r0bot/gochat/internal/pkg/messages"
 	"net"
 	"os"
-	"strings"
 )
 
 type client struct {
 	connection net.Conn
 }
 
-type userInput struct {
-	InputType string
-	Payload   string
-}
-
-func (client *client) sendMessage(usrInput userInput) {
-	clientMessage := messages.ClientMessage{"", "message", usrInput.Payload}
+func (client *client) sendMessage(usrInput input.UserInput) {
+	clientMessage := messages.ClientMessage{"", messages.Broadcast, usrInput.Payload}
 	if client.connection != nil {
 		encoder := json.NewEncoder(client.connection)
 		err := encoder.Encode(&clientMessage)
@@ -63,21 +58,7 @@ func (client *client) listen() {
 	}
 }
 
-func parseInput(input string) userInput {
-	usrInput := userInput{}
-	if strings.HasPrefix(input, "\\") {
-		usrInput.InputType = "command"
-		// Trim the slash and white spaces
-		input = strings.TrimPrefix(input, "\\")
-		usrInput.Payload = strings.TrimSpace(input)
-	} else {
-		usrInput.InputType = "message"
-		usrInput.Payload = input
-	}
-	return usrInput
-}
-
-func executeCommand(usrInput userInput, client *client) {
+func executeCommand(usrInput input.UserInput, client *client) {
 	fmt.Println(usrInput.Payload)
 	if usrInput.Payload == "exit" {
 		fmt.Println("Exiting.")
@@ -90,17 +71,18 @@ func main() {
 	client := client{}
 	client.connectToServer()
 	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Type a message or a command (using \\)")
 	for {
-		fmt.Println("Type a message or a command (using \\)")
-		input, err := reader.ReadString('\n')
+		stdInput, err := reader.ReadString('\n')
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 		}
-		usrInput := parseInput(input)
+		usrInput := input.ParseInput(stdInput)
+
 		switch usrInput.InputType {
-		case "command":
+		case input.Command:
 			executeCommand(usrInput, &client)
-		case "message":
+		case input.Message:
 			client.sendMessage(usrInput)
 		default:
 			fmt.Println("Invalid input.")

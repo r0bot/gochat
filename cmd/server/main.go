@@ -43,7 +43,7 @@ func main() {
 			return
 		}
 
-		client := clients.Client{guuid.New().String(), conn, make(chan []byte), make(chan messages.ClientMessage)}
+		client := clients.Client{guuid.New().String(), conn, make(chan messages.ClientMessage)}
 
 		// Spawn a routine to handle every client concurrently
 		go client.Init()
