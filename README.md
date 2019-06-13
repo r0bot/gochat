@@ -1,5 +1,5 @@
 ## Quickstart
-The applications requires Go version 1.11+
+The applications requires Go version 1.12+
 
 All commands below must be executed from the root directory of the project
 
