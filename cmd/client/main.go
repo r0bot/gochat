@@ -2,19 +2,28 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"github.com/r0bot/gochat/internal/pkg/messages"
 	"net"
 	"os"
+	"strings"
 )
 
 type client struct {
 	connection net.Conn
 }
 
-func (client *client) sendMessage(message string) {
+type userInput struct {
+	InputType string
+	Payload   string
+}
+
+func (client *client) sendMessage(usrInput userInput) {
+	clientMessage := messages.ClientMessage{"", "message", usrInput.Payload}
 	if client.connection != nil {
-		output := []byte(message)
-		_, err := client.connection.Write(output)
+		encoder := json.NewEncoder(client.connection)
+		err := encoder.Encode(&clientMessage)
 		if err != nil {
 			fmt.Println("Could not send message to server!")
 		}
@@ -23,7 +32,7 @@ func (client *client) sendMessage(message string) {
 		fmt.Println("Reconnecting..")
 		client.connectToServer()
 		// Call the function again
-		client.sendMessage(message)
+		client.sendMessage(usrInput)
 	}
 }
 
@@ -41,7 +50,7 @@ func (client *client) connectToServer() {
 
 func (client *client) listen() {
 	for {
-		message := make([]byte, 1024)
+		message := make([]byte, 4096)
 		length, err := client.connection.Read(message)
 		if err != nil {
 			_ = client.connection.Close()
@@ -54,15 +63,47 @@ func (client *client) listen() {
 	}
 }
 
+func parseInput(input string) userInput {
+	usrInput := userInput{}
+	if strings.HasPrefix(input, "\\") {
+		usrInput.InputType = "command"
+		// Trim the slash and white spaces
+		input = strings.TrimPrefix(input, "\\")
+		usrInput.Payload = strings.TrimSpace(input)
+	} else {
+		usrInput.InputType = "message"
+		usrInput.Payload = input
+	}
+	return usrInput
+}
+
+func executeCommand(usrInput userInput, client *client) {
+	fmt.Println(usrInput.Payload)
+	if usrInput.Payload == "exit" {
+		fmt.Println("Exiting.")
+		os.Exit(0)
+	}
+	fmt.Println("Unrecognised command.")
+}
+
 func main() {
 	client := client{}
 	client.connectToServer()
 	reader := bufio.NewReader(os.Stdin)
 	for {
+		fmt.Println("Type a message or a command (using \\)")
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 		}
-		client.sendMessage(input)
+		usrInput := parseInput(input)
+		switch usrInput.InputType {
+		case "command":
+			executeCommand(usrInput, &client)
+		case "message":
+			client.sendMessage(usrInput)
+		default:
+			fmt.Println("Invalid input.")
+		}
 	}
 }

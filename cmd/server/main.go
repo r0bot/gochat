@@ -31,7 +31,7 @@ func main() {
 	defer listener.Close()
 
 	//Create client manager
-	clientManager := clients.ClientManager{make(map[string]*clients.Client), make(chan messages.ClientMessage)}
+	clientManager := clients.ClientManager{make(map[string]*clients.Client), make(chan messages.ClientMessage, 100)}
 	// Init the manager in a routine
 	go clientManager.Init()
 	fmt.Printf("Server listening on adress %s \n", config.Address)
@@ -43,7 +43,7 @@ func main() {
 			return
 		}
 
-		client := clients.Client{guuid.New().String(), conn, make(chan []byte), make(chan []byte)}
+		client := clients.Client{guuid.New().String(), conn, make(chan []byte), make(chan messages.ClientMessage)}
 
 		// Spawn a routine to handle every client concurrently
 		go client.Init()

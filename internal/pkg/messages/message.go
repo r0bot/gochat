@@ -3,5 +3,5 @@ package messages
 type ClientMessage struct {
 	ClientId    string
 	MessageType string
-	Payload     []byte
+	Payload     string
 }

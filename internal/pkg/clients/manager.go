@@ -30,9 +30,8 @@ func (manager *ClientManager) Init() {
 
 func (manager *ClientManager) AddClient(client *Client) {
 	manager.Clients[client.Id] = client
-	for data := range client.Output {
-		fmt.Printf("Message received from client with id %s. Data: %s", client.Id, string(data))
-		message := messages.ClientMessage{ClientId: client.Id, MessageType: "message", Payload: data}
+	for message := range client.Output {
+		fmt.Printf("Message received from client with id %s. Data: %s", client.Id, string(message.Payload))
 		manager.Broadcast <- message
 	}
 	// If a client Output channel is closed consider it disconnected
